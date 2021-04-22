@@ -22,6 +22,12 @@ const eventSchema = new Schema({
     type: Date,
     required: true,
   },
+  creator: {
+    // Just storing the list of event ids created
+    type: Schema.Types.ObjectId,
+    // this allows a relation to be setup between 2 models- will help allow mongoose to automatically merge data
+    ref: "User",
+  },
 });
 
 module.exports = mongoose.model("Event", eventSchema);
