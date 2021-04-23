@@ -1,6 +1,18 @@
 const bcrypt = require("bcryptjs");
 const Event = require("../../models/event");
 const User = require("../../models/user");
+const Booking = require("../../models/booking");
+const { findById } = require("../../models/event");
+
+const transformEvent = event =>{
+  return {
+    ...event._doc,
+    // need to convert id to a string from db
+    _id: event.id,
+    date: new Date(event._doc.date).toISOString(),
+    creator: user.bind(this, event.creator),
+  };
+}
 
 // in await it always returns so dont need to add return after await
 const events = async (eventIds) => {
@@ -9,14 +21,18 @@ const events = async (eventIds) => {
       _id: { $in: eventIds },
     });
     events.map((event) => {
-      return {
-        ...event._doc,
-        _id: event.id,
-        date: new Date(event._doc.date).toISOString(),
-        creator: user.bind(this, event._doc.creator),
-      };
+      return transformEvent(event)
     });
     return events;
+  } catch (err) {
+    throw err;
+  }
+};
+
+const singleEvent = async (eventId) => {
+  try {
+    const event = await Event.findById(eventId);
+    return transformEvent(event)
   } catch (err) {
     throw err;
   }
@@ -43,12 +59,23 @@ module.exports = {
       const events = await Event.find();
       // mapping over events to extract out the data needed as mongo will respond with metadata within the request
       return events.map((event) => {
+        return transformEvent(event)
+      });
+    } catch (err) {
+      throw err;
+    }
+  },
+  bookings: async () => {
+    try {
+      const bookings = await Booking.find();
+      return bookings.map((booking) => {
         return {
-          ...event._doc,
-          // need to convert id to a string from db
-          _id: event._doc._id.toString(),
-          date: new Date(event._doc.date).toISOString(),
-          creator: user.bind(this, event._doc.creator),
+          ...booking._doc,
+          _id: booking.id,
+          user: user.bind(this, booking._doc.user),
+          event: singleEvent.bind(this, booking._doc.event),
+          createdAt: new Date(booking._doc.createdAt).toISOString(),
+          updatedAt: new Date(booking._doc.updatedAt).toISOString(),
         };
       });
     } catch (err) {
@@ -69,20 +96,13 @@ module.exports = {
     // this "save" function is provided by mongoose - it will write the data into the mongodb db
     try {
       const result = await event.save();
-      createdEvent = {
-        ...result._doc,
-        // event.id will use mongoose to convert it automatimcally
-        _id: event.id,
-        date: new Date(event._doc.date).toISOString(),
-        creator: user.bind(this, result._doc.creator),
-      };
+      createdEvent = transformEvent(result)
       const creator = await User.findById("6081a58cbb176c4e653c557d");
       if (!creator) {
         throw new Error("User not found");
       }
       creator.createdEvents.push(event);
       await creator.save();
-      console.log(result);
       return createdEvent;
     } catch (err) {
       throw err;
@@ -107,6 +127,32 @@ module.exports = {
       const result = await user.save();
 
       return { ...result._doc, password: null, _id: result.id };
+    } catch (err) {
+      throw err;
+    }
+  },
+  bookEvent: async (args) => {
+    const fetchedEvent = await Event.findOne({ _id: args.eventId });
+    const booking = new Booking({
+      user: "6081a58cbb176c4e653c557d",
+      event: fetchedEvent,
+    });
+    const result = await booking.save();
+    return {
+      ...result._doc,
+      id: result.id,
+      user: user.bind(this, booking._doc.user),
+      event: singleEvent.bind(this, booking._doc.event),
+      createdAt: new Date(result._doc.createdAt).toISOString(),
+      updatedAt: new Date(result._doc.updatedAt).toISOString(),
+    };
+  },
+  cancelBooking: async (args) => {
+    try {
+      const booking = await Booking.findById(args.bookingId).populate("event");
+      const event = transformEvent(booking.event)
+      await Booking.deleteOne({ _id: args.bookingId });
+      return event
     } catch (err) {
       throw err;
     }
