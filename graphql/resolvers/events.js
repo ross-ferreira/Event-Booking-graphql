@@ -1,4 +1,5 @@
 const Event = require("../../models/event");
+const User = require("../../models/user");
 
 const {transformEvent, } = require("./merge");
 
@@ -16,7 +17,10 @@ module.exports = {
       throw err;
     }
   },
-  createEvent: async (args) => {
+  createEvent: async (args,req) => {
+    if(!req.isAuth){
+      throw new Error('Unathenticated!')
+    }
     // this Event is from the models schema
     const event = new Event({
       title: args.eventInput.title,
@@ -24,14 +28,14 @@ module.exports = {
       price: +args.eventInput.price,
       date: new Date(args.eventInput.date),
       // creator needs to be store as an object id but mongoose can convert a string to an object id automatically
-      creator: "6081a58cbb176c4e653c557d",
+      creator: req.userId,
     });
     let createdEvent;
     // this "save" function is provided by mongoose - it will write the data into the mongodb db
     try {
       const result = await event.save();
       createdEvent = transformEvent(result);
-      const creator = await User.findById("6081a58cbb176c4e653c557d");
+      const creator = await User.findById(req.userId);
       if (!creator) {
         throw new Error("User not found");
       }
