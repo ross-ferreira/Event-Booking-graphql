@@ -11,7 +11,6 @@ const events = async (eventIds) => {
     events.map((event) => {
       return transformEvent(event);
     });
-    return events;
   } catch (err) {
     throw err;
   }

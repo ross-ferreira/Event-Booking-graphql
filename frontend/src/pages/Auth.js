@@ -9,7 +9,7 @@ const AuthPage = () => {
   const [formValues, setFormValues] = useState(null);
   const [isLogin, setIsLogin] = useState(true);
 
-  console.log(authContext);
+  // console.log(authContext);
 
   const handleInputChange = (e) => {
     setFormValues({

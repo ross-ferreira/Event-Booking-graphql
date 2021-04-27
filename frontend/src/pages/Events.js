@@ -146,7 +146,47 @@ const EventsPage = () => {
     const selectedEvent = events.find((e) => e._id === eventId);
     setSelectedEvent(selectedEvent);
   };
-  const bookEventHandler = () => {};
+  const bookEventHandler = () => {
+    if(!authContext.token){
+      setSelectedEvent(null)
+      return
+    }
+    const requestBody = {
+      query: `
+          mutation {
+            bookEvent(eventId: "${selectedEvent._id}") {
+              _id
+              createdAt
+              updatedAt
+            }
+          }
+        `,
+    };
+
+    const token = authContext.token;
+
+    fetch("http://localhost:9000/graphql", {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+    })
+      .then((res) => {
+        if (res.status !== 200 && res.status !== 201) {
+          throw new Error("Failed!");
+        }
+        return res.json();
+      })
+      .then((resData) => {
+        console.log(resData);
+        setSelectedEvent(null)
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
 
   return (
     <>
@@ -207,7 +247,7 @@ const EventsPage = () => {
           canConfirm
           onCancel={modalCancelHandler}
           onConfirm={bookEventHandler}
-          confirmText="Book"
+          confirmText={authContext.token ? "Book" : "Confirm"}
         >
           <h1>{selectedEvent.title}</h1>
           <h2>
