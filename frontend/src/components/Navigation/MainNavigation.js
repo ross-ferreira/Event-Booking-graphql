@@ -1,9 +1,13 @@
-import React from "react";
+import React, { useState, useContext } from "react";
 import { NavLink } from "react-router-dom";
 
-import './MainNavigation.css'
+import AuthContext from "../../context/auth-context";
+
+import "./MainNavigation.css";
 
 const MainNavigation = (props) => {
+  const authContext = useContext(AuthContext);
+
   return (
     <header className="main-navigation">
       <div className="main-navigation__logo">
@@ -11,15 +15,19 @@ const MainNavigation = (props) => {
       </div>
       <nav className="main-navigation__items">
         <ul>
-          <li>
-            <NavLink to="/auth">Login</NavLink>
-          </li>
+          {!authContext.token && (
+            <li>
+              <NavLink to="/auth">Login</NavLink>
+            </li>
+          )}
           <li>
             <NavLink to="/events">Events</NavLink>
           </li>
-          <li>
-            <NavLink to="/bookings">Bookings</NavLink>
-          </li>
+          {authContext.token && (
+            <li>
+              <NavLink to="/bookings">Bookings</NavLink>
+            </li>
+          )}
         </ul>
       </nav>
     </header>
