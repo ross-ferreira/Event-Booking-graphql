@@ -1,4 +1,4 @@
-const DataLoader = require('dataloader')
+const DataLoader = require("dataloader");
 
 const Event = require("../../models/event");
 const User = require("../../models/user");
@@ -9,15 +9,23 @@ const eventLoader = new DataLoader((eventIds) => {
   return events(eventIds);
 });
 
-const userLoader = new DataLoader(userIds => {
-  return User.find({_id: {$in: userIds}});
+const userLoader = new DataLoader((userIds) => {
+  return User.find({ _id: { $in: userIds } });
 });
 
 // in await it always returns so dont need to add return after await
-const events = async eventIds => {
+const events = async (eventIds) => {
   try {
+    // We use sort because we arent getting the correct order of IDS from dataloader
     const events = await Event.find({ _id: { $in: eventIds } });
-    return events.map(event => {
+    events.sort((a, b) => {
+      // will sort array by comparing indexes
+      return (
+        eventsIds.indexOf(a._id.toString()) -
+        eventsIds.indexOf(b._id.toString())
+      );
+    });
+    return events.map((event) => {
       return transformEvent(event);
     });
   } catch (err) {
@@ -26,12 +34,11 @@ const events = async eventIds => {
 };
 
 const singleEvent = async (eventId) => {
-  console.log(eventId)
   try {
     // const event = await Event.findById(eventId); !BEFORE DATA LOADER!
     const event = await eventLoader.load(eventId.toString());
     // return transformEvent(event);!BEFORE DATA LOADER!
-    return event
+    return event;
   } catch (err) {
     throw err;
   }
@@ -46,7 +53,7 @@ const user = async (userId) => {
       _id: user.id,
       // graphql will check to see if the value is a string/function and if function as in "createdEvents" it will call it
       // createdEvents: events.bind(this, user._doc.createdEvents),!BEFORE DATA LOADER!
-      createdEvents: () => eventLoader.loadMany(user._doc.createdEvents)
+      createdEvents: () => eventLoader.loadMany(user._doc.createdEvents),
     };
   } catch (err) {
     throw err;
