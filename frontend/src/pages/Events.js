@@ -46,8 +46,8 @@ const EventsPage = () => {
 
     const requestBody = {
       query: `
-          mutation {
-            createEvent(eventInput: {title: "${formValues.title}", description: "${formValues.description}", price: ${formValues.price}, date: "${formValues.date}"}) {
+          mutation CreateEvent ($title: String!, $desc: String!, $price: Float!, $date: String!) {
+            createEvent(eventInput: {title: $title description: $desc, price: $price, date: $date}) {
               _id
               title
               description
@@ -56,6 +56,12 @@ const EventsPage = () => {
             }
           }
         `,
+      variables: {
+        title: formValues.title,
+        desc: formValues.description,
+        price: formValues.price,
+        date: formValues.date,
+      },
     };
 
     const token = authContext.token;
@@ -147,20 +153,23 @@ const EventsPage = () => {
     setSelectedEvent(selectedEvent);
   };
   const bookEventHandler = () => {
-    if(!authContext.token){
-      setSelectedEvent(null)
-      return
+    if (!authContext.token) {
+      setSelectedEvent(null);
+      return;
     }
     const requestBody = {
       query: `
-          mutation {
-            bookEvent(eventId: "${selectedEvent._id}") {
+          mutation BookEvent ($id:ID!) {
+            bookEvent(eventId: $id) {
               _id
               createdAt
               updatedAt
             }
           }
         `,
+      variables: {
+        id: selectedEvent._id,
+      },
     };
 
     const token = authContext.token;
@@ -181,7 +190,7 @@ const EventsPage = () => {
       })
       .then((resData) => {
         console.log(resData);
-        setSelectedEvent(null)
+        setSelectedEvent(null);
       })
       .catch((err) => {
         console.log(err);
